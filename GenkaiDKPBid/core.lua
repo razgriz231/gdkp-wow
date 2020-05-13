@@ -191,19 +191,33 @@ function clearCurrentLootAuctionActions()
 	currentHighBid = 0
 	yourBid = 0
 	
-	currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
-	yourbidlabel:SetText("Your Bid: " .. yourBid)
-	editbox:SetText("")
+	if frameShown then
+		setTextCurrentBidLabel()
+		yourbidlabel:SetText("Your Bid: " .. yourBid)
+		editbox:SetText("")
+	end
 end
 
 function checkHighBid(incomingBid)
 	
 	if currentHighBid < incomingBid then
 		currentHighBid = incomingBid
-		currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
+		setTextCurrentBidLabel(false)
 	elseif currentHighBid == incomingBid then
+		setTextCurrentBidLabel(true)
+	end
+end
+
+function setTextCurrentBidLabel(isTie)
+	
+	isTie = isTie or false
+	
+	if frameShown and not isTie then
+		currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
+	elseif frameShown and isTie then
 		currentbidlabel:SetText("Current High Bid: " .. currentHighBid .. " - multiple ties, bid again")
 	end
+	
 end
 
 function passOnItem()
