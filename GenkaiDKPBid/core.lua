@@ -14,6 +14,8 @@ local isMasterLooter = false
 bidders = {}
 currentHighBid = 0
 yourBid = 0
+currentBidItem = ""
+currentSpec = "MS - "
 
 genkaiDKPBid:RegisterChatCommand("gdkp","ChatCommand")
 
@@ -27,27 +29,28 @@ local function showFrame()
 
 	frame = AceGUI:Create("Frame")
 	frame:SetTitle("Genkai's DKP Loot")
-	frame:SetWidth(320)
+	frame:SetWidth(250)
 	frame:SetHeight(150)
+	frame:SetStatusText("v1.3")
 	frame:SetCallback("OnClose", function(widget)
 								AceGUI:Release(widget) 
 								frameShown = false 
 								MLShown = false end)
 	frame:SetLayout("List")
 	
-	sgroup_3 = AceGUI:Create("SimpleGroup")
-	sgroup_3:SetFullWidth(true)
-	sgroup_3:SetFullHeight(true)
-	sgroup_3:SetLayout("Flow")
-	frame:AddChild(sgroup_3)
-	
 	yourbidlabel = AceGUI:Create("Label")
 	yourbidlabel:SetText("Your Bid: " .. yourBid)
-	sgroup_3:AddChild(yourbidlabel)
+	frame:AddChild(yourbidlabel)
 	
 	currentbidlabel = AceGUI:Create("Label")
 	currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
-	sgroup_3:AddChild(currentbidlabel)
+	frame:AddChild(currentbidlabel)
+	
+	currentItemlabel = AceGUI:Create("InteractiveLabel")
+	currentItemlabel:SetText(currentBidItem)
+	currentItemlabel:SetCallback("OnEnter", function() getItemLinkInfo() end)
+	currentItemlabel:SetCallback("OnLeave", function() GameTooltip:Hide() end)
+	frame:AddChild(currentItemlabel)
 	
 	sgroup_1 = AceGUI:Create("SimpleGroup")
 	sgroup_1:SetFullWidth(true)
@@ -59,25 +62,26 @@ local function showFrame()
 	editbox:SetLabel("Bid Amount:")
 	editbox:SetWidth(70)
 	editbox:DisableButton("True")
+	editbox:SetCallback("OnEnterPressed", function(widget, event, text) sendBid(editbox:GetText()) end)
 	sgroup_1:AddChild(editbox)
 	
-	button = AceGUI:Create("Button")
-	button:SetText("Send")
-	button:SetWidth(70)
-	button:SetCallback("OnClick", function() sendBid(editbox:GetText()) end)
-	sgroup_1:AddChild(button)
+	-- button = AceGUI:Create("Button")
+	-- button:SetText("Send")
+	-- button:SetWidth(70)
+	-- button:SetCallback("OnClick", function() sendBid(editbox:GetText()) end)
+	-- sgroup_1:AddChild(button)
+	
+	cmlbutton = AceGUI:Create("Button")
+	cmlbutton:SetText("OS")
+	cmlbutton:SetWidth(60)
+	cmlbutton:SetCallback("OnClick", function() sendOSForItem() end)
+	sgroup_1:AddChild(cmlbutton)
 	
 	passbutton = AceGUI:Create("Button")
 	passbutton:SetText("Pass")
 	passbutton:SetWidth(70)
 	passbutton:SetCallback("OnClick", function() passOnItem() end)
 	sgroup_1:AddChild(passbutton)
-	
-	cmlbutton = AceGUI:Create("Button")
-	cmlbutton:SetText("ML")
-	cmlbutton:SetWidth(60)
-	cmlbutton:SetCallback("OnClick", function() getMasterLooter() end)
-	sgroup_1:AddChild(cmlbutton)
 end
 
 function genkaiDKPBid:ChatCommand()
@@ -97,8 +101,8 @@ function getMasterLooter()
 		
 		indexRaid = UnitInRaid("player")
 		if indexRaid == masterlooterRaidID then
-			frame:SetWidth(400)
-			frame:SetHeight(330)
+			frame:SetWidth(320)
+			frame:SetHeight(290)
 			showMasterLootSection()
 			buildRecievedMessageTable()
 		end
@@ -119,7 +123,7 @@ function showMasterLootSection()
 	sgroup_2:SetTitle("Bid Messages:")
 	sgroup_2:SetFullWidth(true)
 	sgroup_2:SetFullHeight(true)
-	sgroup_2:SetHeight(170)
+	sgroup_2:SetHeight(90)
 	sgroup_2:SetLayout("Fill")
 	frame:AddChild(sgroup_2)
 	
@@ -132,6 +136,56 @@ function showMasterLootSection()
 	clearbutton:SetWidth(70)
 	clearbutton:SetCallback("OnClick", function() clearCurrentLootAuctionMessage() end)
 	sgroup_1:AddChild(clearbutton)
+	
+	sitemgroup_1 = AceGUI:Create("SimpleGroup")
+	sitemgroup_1:SetFullWidth(true)
+	sitemgroup_1:SetFullHeight(true)
+	sitemgroup_1:SetLayout("Flow")
+	frame:AddChild(sitemgroup_1)
+	
+	itemLinkbox = AceGUI:Create("EditBox")
+	itemLinkbox:SetWidth(120)
+	itemLinkbox:DisableButton("True")
+	itemLinkbox:SetCallback("OnEnterPressed", function(widget, event, text) sendItemLinkTolabel(itemLinkbox:GetText())  end)
+	sitemgroup_1:AddChild(itemLinkbox)
+	
+	rwbiditembutton = AceGUI:Create("Button")
+	rwbiditembutton:SetText("MS")
+	rwbiditembutton:SetWidth(70)
+	rwbiditembutton:SetCallback("OnClick", function() sendMSRWMessage() end)
+	sitemgroup_1:AddChild(rwbiditembutton)
+	
+	rwosbidbutton = AceGUI:Create("Button")
+	rwosbidbutton:SetText("OS")
+	rwosbidbutton:SetWidth(70)
+	rwosbidbutton:SetCallback("OnClick", function() sendOSRWMessage() end)
+	sitemgroup_1:AddChild(rwosbidbutton)
+end
+
+function sendItemLinkTolabel(textInput)
+	currentItemlabel:SetText(textInput)
+	currentBidItem = textInput
+end
+
+function getItemLinkInfo()
+	
+	if currentBidItem ~= "" then
+		GameTooltip:SetOwner(TargetFrame, "ANCHOR_CURSOR")
+		GameTooltip:SetHyperlink(currentBidItem)
+		GameTooltip:Show()
+	end
+end
+
+function sendMSRWMessage()
+	currentItemlabel:SetText(currentSpec .. currentBidItem)
+	SendChatMessage("Send in MS Bids Now: " .. currentBidItem, "RAID_WARNING")
+end
+
+function sendOSRWMessage()
+	currentSpec = "OS - "
+	clearBidArray()
+	currentItemlabel:SetText(currentSpec .. currentBidItem)
+	SendChatMessage("Send in OS Bids Now: " .. currentBidItem, "RAID_WARNING")
 end
 
 function getDKPBid(senderName, messageBid)
@@ -190,11 +244,15 @@ end
 function clearCurrentLootAuctionActions()
 	currentHighBid = 0
 	yourBid = 0
+	currentBidItem = ""
+	currentSpec = "MS - "
 	
 	if frameShown then
 		setTextCurrentBidLabel()
 		yourbidlabel:SetText("Your Bid: " .. yourBid)
 		editbox:SetText("")
+		currentItemlabel:SetText("")
+		itemLinkbox:SetText("")
 	end
 end
 
@@ -209,8 +267,8 @@ function checkHighBid(incomingBid)
 end
 
 function setTextCurrentBidLabel(isTie)
-	
-	isTie = isTie or false
+	--nned to test this and confirm if it resets after function called
+	local isTie = isTie or false
 	
 	if frameShown and not isTie then
 		currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
@@ -224,5 +282,12 @@ function passOnItem()
 
 	genkaiDKPBid:SendCommMessage("gsdkp", "Pass", "RAID")
 	yourbidlabel:SetText("Your Bid: Pass")
+	editbox:SetText("")
+end
+
+function sendOSForItem()
+
+	genkaiDKPBid:SendCommMessage("gsdkp", "OS", "RAID")
+	yourbidlabel:SetText("Your Bid: OS")
 	editbox:SetText("")
 end
