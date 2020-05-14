@@ -31,7 +31,7 @@ local function showFrame()
 	frame:SetTitle("Genkai's DKP Loot")
 	frame:SetWidth(250)
 	frame:SetHeight(150)
-	frame:SetStatusText("v1.3")
+	frame:SetStatusText("v1.3.1")
 	frame:SetCallback("OnClose", function(widget)
 								AceGUI:Release(widget) 
 								frameShown = false 
@@ -165,6 +165,7 @@ end
 function sendItemLinkTolabel(textInput)
 	currentItemlabel:SetText(textInput)
 	currentBidItem = textInput
+	itemLinkbox:SetText("")
 end
 
 function getItemLinkInfo()
@@ -206,13 +207,12 @@ function buildRecievedMessageTable()
 end
 
 function sendBid(bidAmount)
-
-	yourBid = bidAmount
 	
 	if tonumber(bidAmount) then
+		yourBid = bidAmount
 		genkaiDKPBid:SendCommMessage("gsdkp", bidAmount, "RAID")
-		
 		yourbidlabel:SetText("Your Bid: " .. yourBid)
+		editbox:SetText("")
 	end
 end
 
