@@ -31,7 +31,7 @@ local function showFrame()
 	frame:SetTitle("Genkai's DKP Loot")
 	frame:SetWidth(250)
 	frame:SetHeight(150)
-	frame:SetStatusText("v1.3.1")
+	frame:SetStatusText("v1.3.2")
 	frame:SetCallback("OnClose", function(widget)
 								AceGUI:Release(widget) 
 								frameShown = false 
@@ -281,13 +281,15 @@ end
 function passOnItem()
 
 	genkaiDKPBid:SendCommMessage("gsdkp", "Pass", "RAID")
-	yourbidlabel:SetText("Your Bid: Pass")
+	yourBid = "Pass"
+	yourbidlabel:SetText("Your Bid: " .. yourBid)
 	editbox:SetText("")
 end
 
 function sendOSForItem()
 
 	genkaiDKPBid:SendCommMessage("gsdkp", "OS", "RAID")
-	yourbidlabel:SetText("Your Bid: OS")
+	yourBid = "OS"
+	yourbidlabel:SetText("Your Bid: " .. yourBid)
 	editbox:SetText("")
 end
