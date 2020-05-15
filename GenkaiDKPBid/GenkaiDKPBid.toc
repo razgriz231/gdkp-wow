@@ -1,5 +1,5 @@
 ## Interface: 11302
-## Version: v1.3.1
+## Version: v1.3.4
 ## Title: GenkaiDKPBid
 ## Notes: Silent DKP Bidding System
 ## Author: Genkai-Skeram

@@ -4,6 +4,8 @@ local AceGUI = LibStub("AceGUI-3.0")
 
 function genkaiDKPBid:OnEnable()
 	genkaiDKPBid:RegisterComm("gsdkp","OnCommReceived")
+	genkaiDKPBid:RegisterComm("gsdkpitem","OnCommReceived")
+	genkaiDKPBid:RegisterComm("gsdkpspec","OnCommReceived")
 	print("Initalized Genkai's DKP")
 end
 
@@ -16,6 +18,8 @@ currentHighBid = 0
 yourBid = 0
 currentBidItem = ""
 currentSpec = "MS - "
+lastSender = ""
+isSameSender = false
 
 genkaiDKPBid:RegisterChatCommand("gdkp","ChatCommand")
 
@@ -31,7 +35,7 @@ local function showFrame()
 	frame:SetTitle("Genkai's DKP Loot")
 	frame:SetWidth(250)
 	frame:SetHeight(150)
-	frame:SetStatusText("v1.3.2")
+	frame:SetStatusText("v1.3.5")
 	frame:SetCallback("OnClose", function(widget)
 								AceGUI:Release(widget) 
 								frameShown = false 
@@ -47,7 +51,7 @@ local function showFrame()
 	frame:AddChild(currentbidlabel)
 	
 	currentItemlabel = AceGUI:Create("InteractiveLabel")
-	currentItemlabel:SetText(currentBidItem)
+	currentItemlabel:SetText(currentSpec .. currentBidItem)
 	currentItemlabel:SetCallback("OnEnter", function() getItemLinkInfo() end)
 	currentItemlabel:SetCallback("OnLeave", function() GameTooltip:Hide() end)
 	frame:AddChild(currentItemlabel)
@@ -163,8 +167,7 @@ function showMasterLootSection()
 end
 
 function sendItemLinkTolabel(textInput)
-	currentItemlabel:SetText(textInput)
-	currentBidItem = textInput
+	genkaiDKPBid:SendCommMessage("gsdkpitem", textInput, "RAID")
 	itemLinkbox:SetText("")
 end
 
@@ -178,15 +181,17 @@ function getItemLinkInfo()
 end
 
 function sendMSRWMessage()
-	currentItemlabel:SetText(currentSpec .. currentBidItem)
+	currentSpec = "MS - "
 	SendChatMessage("Send in MS Bids Now: " .. currentBidItem, "RAID_WARNING")
+	genkaiDKPBid:SendCommMessage("gsdkpspec", currentSpec, "RAID")
 end
 
 function sendOSRWMessage()
 	currentSpec = "OS - "
 	clearBidArray()
-	currentItemlabel:SetText(currentSpec .. currentBidItem)
 	SendChatMessage("Send in OS Bids Now: " .. currentBidItem, "RAID_WARNING")
+	genkaiDKPBid:SendCommMessage("gsdkp", "ClearCurrentHighBid", "RAID")
+	genkaiDKPBid:SendCommMessage("gsdkpspec", currentSpec, "RAID")
 end
 
 function getDKPBid(senderName, messageBid)
@@ -222,16 +227,58 @@ function clearBidArray()
 end
 
 function genkaiDKPBid:OnCommReceived(prefix, message, distribution, sender)
-	if isMasterLooter and message ~= "ClearCurrentAuction" then
-		getDKPBid(sender, message)
+	
+	if prefix == "gsdkp" then
+		gsdkpCommRecievedFunctions(message, distribution, sender)
+	elseif prefix == "gsdkpitem" then
+		gsdkpitemCommRecievedFunctions(message, distribution, sender)
+	elseif prefix == "gsdkpspec" then
+		gsdkpspecCommRecievedFunctions(message, distribution, sender)
+	end
+end
+
+function gsdkpCommRecievedFunctions(messageGSDKP, distributionGSDKP, senderGSDKP)
+	if isMasterLooter and messageGSDKP ~= "ClearCurrentAuction" and messageGSDKP ~= "ClearCurrentHighBid" then
+		getDKPBid(senderGSDKP, messageGSDKP)
 	end
 	
-	if tonumber(message) then
-		checkHighBid(tonumber(message))
+	if lastSender == senderGSDKP then
+		isSameSender = true
+	else
+		lastSender = senderGSDKP
+		isSameSender = false
 	end
 	
-	if message == "ClearCurrentAuction" then
+	if tonumber(messageGSDKP) then
+		checkHighBid(tonumber(messageGSDKP))
+	end
+	
+	if messageGSDKP == "ClearCurrentAuction" then
 		clearCurrentLootAuctionActions()
+	end
+	
+	if messageGSDKP == "ClearCurrentHighBid" then
+		currentHighBid = 0
+		yourBid = 0
+		
+		if frameShown then
+		setTextCurrentBidLabel()
+		yourbidlabel:SetText("Your Bid: " .. yourBid)
+		editbox:SetText("")
+		end
+	end
+end
+
+function gsdkpitemCommRecievedFunctions(messageITEM, distributionITEM, senderITEM)
+	currentItemlabel:SetText(messageITEM)
+	currentBidItem = messageITEM
+end
+
+function gsdkpspecCommRecievedFunctions(messageSPEC, distributionSPEC, senderSPEC)
+	currentSpec = messageSPEC
+	
+	if frameShown then
+		currentItemlabel:SetText(currentSpec .. currentBidItem)
 	end
 end
 
@@ -239,20 +286,20 @@ function clearCurrentLootAuctionMessage()
 	genkaiDKPBid:SendCommMessage("gsdkp", "ClearCurrentAuction", "RAID")
 	
 	clearBidArray()
+	itemLinkbox:SetText("")
 end
 
 function clearCurrentLootAuctionActions()
 	currentHighBid = 0
 	yourBid = 0
 	currentBidItem = ""
-	currentSpec = "MS - "
+	currentSpec = ""
 	
 	if frameShown then
 		setTextCurrentBidLabel()
 		yourbidlabel:SetText("Your Bid: " .. yourBid)
 		editbox:SetText("")
 		currentItemlabel:SetText("")
-		itemLinkbox:SetText("")
 	end
 end
 
@@ -267,12 +314,12 @@ function checkHighBid(incomingBid)
 end
 
 function setTextCurrentBidLabel(isTie)
-	--nned to test this and confirm if it resets after function called
-	local isTie = isTie or false
+	
+	isTie = isTie or false
 	
 	if frameShown and not isTie then
 		currentbidlabel:SetText("Current High Bid: " .. currentHighBid)
-	elseif frameShown and isTie then
+	elseif frameShown and isTie and not isSameSender then
 		currentbidlabel:SetText("Current High Bid: " .. currentHighBid .. " - multiple ties, bid again")
 	end
 	
