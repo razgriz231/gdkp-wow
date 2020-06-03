@@ -35,7 +35,7 @@ local function showFrame()
 	frame:SetTitle("Genkai's DKP Loot")
 	frame:SetWidth(250)
 	frame:SetHeight(150)
-	frame:SetStatusText("v1.3.7")
+	frame:SetStatusText("v1.3.8")
 	frame:SetCallback("OnClose", function(widget)
 								AceGUI:Release(widget) 
 								frameShown = false 
@@ -100,7 +100,7 @@ function getMasterLooter()
 		indexRaid = UnitInRaid("player")
 		if indexRaid == masterlooterRaidID then
 			frame:SetWidth(320)
-			frame:SetHeight(290)
+			frame:SetHeight(320)
 			showMasterLootSection()
 			buildRecievedMessageTable()
 		end
@@ -228,9 +228,9 @@ function genkaiDKPBid:OnCommReceived(prefix, message, distribution, sender)
 	if prefix == "gsdkp" then
 		gsdkpCommRecievedFunctions(prefix, message, distribution, sender)
 	elseif prefix == "gsdkpitem" then
-		gsdkpitemCommRecievedFunctions(prefix, message, distribution, sender)
+		gsdkpitemCommRecievedFunctions(message, distribution, sender)
 	elseif prefix == "gsdkpspec" then
-		gsdkpspecCommRecievedFunctions(prefix, message, distribution, sender)
+		gsdkpspecCommRecievedFunctions(message, distribution, sender)
 	end
 end
 
@@ -240,11 +240,9 @@ function gsdkpCommRecievedFunctions(prefixGSDKP, messageGSDKP, distributionGSDKP
 		checkHighBid(tonumber(messageGSDKP), senderGSDKP)
 	end
 	
-	if isMasterLooter then
-		if prefixGSDKP == "gsdkp" then
-			getDKPBid(senderGSDKP, messageGSDKP)
-		end
-	end
+	if isMasterLooter and messageGSDKP ~= "ClearCurrentAuction" and messageGSDKP ~= "ClearCurrentHighBid" then
+        getDKPBid(senderGSDKP, messageGSDKP)
+    end
 	
 	if messageGSDKP == "ClearCurrentAuction" then
 		clearCurrentLootAuctionActions()
